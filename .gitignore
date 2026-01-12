@@ -10,6 +10,9 @@ __pycache__
 .pytest_cache
 config.py
 auto_config.py
+.venv/
+.updater/.venv/
+.updater/.python-version
 .DS_Store
 .idea/
 .vscode/

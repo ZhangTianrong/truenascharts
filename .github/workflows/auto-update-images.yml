@@ -1,0 +1,58 @@
+name: Auto Update Images
+
+on:
+  schedule:
+    # Daily at 01:30 UTC
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-update-images
+  cancel-in-progress: false
+
+jobs:
+  update-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: master
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install updater dependencies
+        working-directory: .updater
+        run: |
+          uv sync
+          git diff --exit-code uv.lock
+
+      - name: Run updater
+        working-directory: .updater
+        run: uv run python update.py
+
+      - name: Push changes (if any)
+        run: |
+          git fetch origin master
+          if [[ $(git rev-list --count origin/master..HEAD) -ne 0 ]]; then
+            git push origin master
+          else
+            echo "No changes to push"
+          fi
+
+
