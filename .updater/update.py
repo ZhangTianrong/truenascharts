@@ -83,13 +83,19 @@ def parse_version(tags, matcher: Optional[object] = None, rewriter: Optional[str
         patterns = [matcher]
 
     if patterns:
-        for pattern in patterns:
-            for tag in tags:
-                if match := re.search(pattern, tag):
-                    raw_version = match[0]
-                    if rewriter:
-                        return tag, rewriter.format(raw_version)
-                    return tag, raw_version
+        candidates = []
+        for tag in tags:
+            for pattern in patterns:
+                if re.search(pattern, tag):
+                    candidates.append(tag)
+                    break
+
+        if candidates:
+            chosen = choose_best_tag(candidates)
+            app_ver = _derive_app_version_from_tag(chosen)
+            if rewriter:
+                app_ver = rewriter.format(app_ver)
+            return chosen, app_ver
 
     # Fallback: pick a reasonable tag (avoid "latest" and avoid coarse major tags when possible).
     chosen = choose_best_tag(tags)
@@ -104,10 +110,11 @@ def _derive_app_version_from_tag(tag: str) -> str:
         return tag
     if match := re.search(r"\d{10}", tag):
         return match[0]
-    if re.fullmatch(r"\d+\.\d+\.\d+", tag):
-        return tag
+    # v0.107.71 => 0.107.71
     if match := re.search(r"\d+\.\d+\.\d+", tag):
         return match[0]
+    if re.fullmatch(r"\d+\.\d+\.\d+", tag):
+        return tag
     return tag
 
 
@@ -137,6 +144,15 @@ def choose_best_tag(tags) -> str:
             a, b, c = t.split(".")
             return int(a), int(b), int(c)
         return max(semver_tags, key=semver_key)
+
+    # 2b) v-prefixed semver tags (common on Docker Hub, e.g. v0.107.71)
+    v_semver_tags = [t for t in tags_set if re.fullmatch(r"v\d+\.\d+\.\d+", t)]
+    if v_semver_tags:
+        def v_semver_key(t: str):
+            ver = t[1:]
+            a, b, c = ver.split(".")
+            return int(a), int(b), int(c)
+        return max(v_semver_tags, key=v_semver_key)
 
     # 3) arch-specific timestamp tags
     arch_ts_tags = [t for t in tags_set if re.fullmatch(r"\d{10}-[A-Za-z0-9_.-]+", t)]

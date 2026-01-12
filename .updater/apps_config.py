@@ -18,6 +18,19 @@ APPS = [
             "version_matcher": [r"^\d{10}$", r"^\d+\.\d+\.\d+$", r"^\d{10}-amd64$"],
         },
     },
+    {
+        "name": "adguard-home",
+        "train": "community",
+        "check_ver": {
+            "type": "dockerhub",
+            "package_owner": "adguard",
+            "package_name": "adguardhome",
+            # Use Docker Hub "latest" as the anchor, then pick the best stable tag for that digest.
+            "anchor_tag": "latest",
+            # Prefer v-prefixed semver tags (e.g. v0.107.71). Chart appVersion will be derived as 0.107.71.
+            "version_matcher": [r"^v\d+\.\d+\.\d+$", r"^\d+\.\d+\.\d+$"],
+        },
+    },
 ]
 
 # Repo root (TrueNASCharts/)
