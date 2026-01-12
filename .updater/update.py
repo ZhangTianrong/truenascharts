@@ -10,8 +10,14 @@ from typing import Optional, Tuple
 
 import yaml
 
-from config import APPS as apps
-from config import CHARTS_DIR
+try:
+    # Preferred: local override config (ignored by repo .gitignore)
+    from config import APPS as apps  # type: ignore
+    from config import CHARTS_DIR  # type: ignore
+except ModuleNotFoundError:
+    # Fallback: tracked default config
+    from apps_config import APPS as apps
+    from apps_config import CHARTS_DIR
 from version_checker import DockerHubChecker, GHCRChecker
 
 logging.basicConfig(level=logging.INFO)
