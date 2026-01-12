@@ -274,6 +274,26 @@ def create_version_dir(app_name: str, app_train: str, old_version: ChartVersion,
     with open(CHARTS_DIR / new_dir / "Chart.yaml", "w", encoding="utf-8") as f:
         yaml.safe_dump(chart, f, sort_keys=False)
 
+    # Preserve executable bit for migration scripts. On Windows, copytree won't keep it,
+    # but TrueNAS requires `migrations/migrate` to be executable when app_migrations is present.
+    old_migrate = f"{old_dir}/migrations/migrate"
+    new_migrate = f"{new_dir}/migrations/migrate"
+    try:
+        old_mode = subprocess.run(
+            ["git", "-C", str(CHARTS_DIR), "ls-tree", "-r", "HEAD", old_migrate],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        if old_mode.startswith("100755") and (CHARTS_DIR / new_migrate).exists():
+            subprocess.run(
+                ["git", "-C", str(CHARTS_DIR), "update-index", "--chmod=+x", new_migrate],
+                check=True,
+            )
+    except Exception:
+        # Best-effort; if git isn't available, user can fix permissions manually later.
+        pass
+
     return new_dir
 
 
