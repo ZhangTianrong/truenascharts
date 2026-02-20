@@ -1,0 +1,18 @@
+image:
+  repository: adguard/adguardhome
+  tag: v0.107.72
+  pullPolicy: IfNotPresent
+resources:
+  limits:
+    cpu: 4000m
+    memory: 8Gi
+adguardNetwork:
+  webPort: 30004
+  enableDHCP: false
+adguardStorage:
+  work:
+    type: ixVolume
+    datasetName: work
+  conf:
+    type: ixVolume
+    datasetName: conf
